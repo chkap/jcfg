@@ -11,3 +11,5 @@ class JCfgInvalidValueError(JCfgError):
     pass
 
 
+class JCfgKeyNotFoundError(JCfgError):
+    pass

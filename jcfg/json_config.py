@@ -1,7 +1,7 @@
 import re
 
 
-from .error import JCfgInvalidKeyError, JCfgInvalidValueError
+from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError
 
 
 class JsonCfg(object):
@@ -21,7 +21,7 @@ class JsonCfg(object):
             if value_type == 'pure_value' or value_type == 'custom_value':
                 config_desc[key] = cls.__parse_value(config_meta[key])
             else:
-                config_desc[key] = cls.__load_from(config_meta[key])
+                config_desc[key] = JsonCfg(config_meta[key])
         return config_desc
 
     @classmethod
@@ -66,7 +66,7 @@ class JsonCfg(object):
     def __assert_valid_key(cls, key):
         if cls.__reo.fullmatch(key) is None:
             raise JCfgInvalidKeyError(
-                'Invalid config key: {}, only A-Za-z0-9_ is allowed.'.format(key))
+                'Invalid config key: {}, only [A-Za-z0-9_] is allowed.'.format(key))
         else:
             return
 
@@ -82,3 +82,29 @@ class JsonCfg(object):
         else:
             raise JCfgInvalidValueError(
                 'Invalid value error: {}'.format(str(value)))
+
+    def __getitem__(self, key):
+        key_list = key.split('.')
+        return self.__get_value_by_key_list(key_list)
+
+    def __get_value_by_key_list(self, key_list):
+        assert len(key_list) >= 1
+        if len(key_list) == 1:
+            return self.__get_value(key_list[0])
+        else:
+            return self.__get_value_by_key_list(key_list[:-1])[key_list[-1]]
+
+    def __get_value(self, key):
+        self.__assert_valid_key(key)
+        if key not in self.__config_desc:
+            raise JCfgKeyNotFoundError(
+                'Config key: {} is not found'.format(key))
+        else:
+            _value = self.__config_desc[key]
+            if isinstance(_value, JsonCfg):
+                return _value
+            else:
+                assert isinstance(_value, dict) and 'value' in _value
+                return _value['value']
+    
+
