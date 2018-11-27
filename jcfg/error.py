@@ -10,6 +10,9 @@ class JCfgInvalidKeyError(JCfgError):
 class JCfgInvalidValueError(JCfgError):
     pass
 
-
 class JCfgKeyNotFoundError(JCfgError):
+    pass
+
+
+class JCfgValueTypeMismatchError(JCfgError):
     pass

@@ -1,7 +1,7 @@
 import re
 
 
-from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError
+from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError
 
 
 class JsonCfg(object):
@@ -17,11 +17,11 @@ class JsonCfg(object):
         config_desc = {}
         for key in config_meta:
             cls.__assert_valid_key(key)
-            value_type = cls.__check_value_type(config_meta[key])
-            if value_type == 'pure_value' or value_type == 'custom_value':
-                config_desc[key] = cls.__parse_value(config_meta[key])
-            else:
+            value = config_meta[key]
+            if isinstance(value, dict) and 'default' not in value:
                 config_desc[key] = JsonCfg(config_meta[key])
+            else:
+                config_desc[key] = JsonCfgValue.create_from_value(value)
         return config_desc
 
     @classmethod
@@ -86,6 +86,9 @@ class JsonCfg(object):
     def __getitem__(self, key):
         key_list = key.split('.')
         return self.__get_value_by_key_list(key_list)
+    
+    def __getattr__(self, name):
+        return self.__getitem__(name)
 
     def __get_value_by_key_list(self, key_list):
         assert len(key_list) >= 1
@@ -104,7 +107,55 @@ class JsonCfg(object):
             if isinstance(_value, JsonCfg):
                 return _value
             else:
-                assert isinstance(_value, dict) and 'value' in _value
-                return _value['value']
-    
+                assert isinstance(_value, JsonCfgValue), type(_value)
+                return _value.get()
 
+
+
+class JsonCfgValue(object):
+    def __init__(self, value, value_type, default, **extra_attr):
+        self.__value = value
+        self.__type = value_type
+        self.__default = default
+        self.__extra = extra_attr
+
+    def get(self):
+        return self.__value
+
+    def set(self, value):
+        if isinstance(value, self.__type):
+            self.__value = value
+        else:
+            raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
+                str(self.__type), str(type(value))))
+
+    @classmethod
+    def create_from_value(cls, value):
+        '''value can be a pure value (int, float, str, or list) or a custom dict value
+        '''
+        if isinstance(value, dict) and 'default' in value:
+            return cls.__create_from_dict_value(value)
+        else:
+            return cls.__create_from_pure_value(value)
+
+    @classmethod
+    def __create_from_pure_value(cls, value, **extra_attr):
+        if isinstance(value, int):
+            _type = int
+        elif isinstance(value, float):
+            _type = float
+        elif isinstance(value, str):
+            _type = str
+        elif isinstance(value, list):
+            _type = list
+        else:
+            raise JCfgInvalidValueError(
+                'Invalid value error: {}'.format(str(value)))
+        return JsonCfgValue(value, _type, value, **extra_attr)
+
+    @classmethod
+    def __create_from_dict_value(cls, value):
+        assert isinstance(value, dict)
+        assert 'default' in value
+        default = value.pop('default')
+        return cls.__create_from_pure_value(default, **value)

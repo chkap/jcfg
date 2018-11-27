@@ -52,6 +52,7 @@ class TestGetItem(unittest.TestCase):
         self.assertEqual(self.config['c'], 'val')
         self.assertEqual(self.config['d'][0], 1)
         self.assertIsInstance(self.config['f']['f_d'], JsonCfg)
+        self.assertIsInstance(self.config.f.f_d, JsonCfg)
 
     def test_concat_get(self):
         self.assertEqual(self.config['f.f_d.f_d_b'][0], 'a')
