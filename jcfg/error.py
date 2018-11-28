@@ -16,3 +16,6 @@ class JCfgKeyNotFoundError(JCfgError):
 
 class JCfgValueTypeMismatchError(JCfgError):
     pass
+
+class JCfgInvalidSetValueError(JCfgError):
+    pass
