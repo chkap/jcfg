@@ -171,8 +171,11 @@ class JsonCfgValue(object):
         if isinstance(value, self.__type):
             self.__value = value
         else:
-            raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
-                str(self.__type), str(type(value))))
+            if isinstance(value, int) and self.__type == float:
+                self.__value = value
+            else:
+                raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
+                    str(self.__type), str(type(value))))
 
     @classmethod
     def create_from_value(cls, value):
