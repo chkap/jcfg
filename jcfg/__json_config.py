@@ -1,7 +1,8 @@
 import re
+import argparse
 
-
-from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError
+from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
+    JCfgInvalidSetValueError
 
 
 class JsonCfg(object):
@@ -9,7 +10,9 @@ class JsonCfg(object):
     __reo = re.compile(__valid_key_pattern)
 
     def __init__(self, config_meta):
-        assert isinstance(config_meta, dict)
+        if not isinstance(config_meta, dict):
+            raise ValueError(
+                'Cannot init from {}, a dict is needed'.format(type(dict)))
         self.__config_desc = self.__load_from(config_meta)
 
     @classmethod
@@ -25,63 +28,12 @@ class JsonCfg(object):
         return config_desc
 
     @classmethod
-    def __parse_value(cls, value):
-        value_type = cls.__check_value_type(value)
-        if value_type == 'pure_value':
-            value_desc = cls.__create_value_desc_from_default_value(value)
-        elif value_type == 'custom_value':
-            assert 'default' in value
-            value_desc = cls.__create_value_desc_from_default_value(
-                value['default'])
-            for attr in value:
-                if attr in value_desc:
-                    continue
-                else:
-                    value_desc[attr] = value[attr]
-        else:
-            assert False, 'This should never happen!'
-
-        return value_desc
-
-    @classmethod
-    def __create_value_desc_from_default_value(cls, value):
-        value_desc = {}
-        value_desc['value'] = value
-        value_desc['default'] = value
-        assert cls.__check_value_type(value) == 'pure_value'
-        if isinstance(value, int):
-            value_desc['type'] = int
-        elif isinstance(value, float):
-            value_desc['type'] = float
-        elif isinstance(value, str):
-            value_desc['type'] = str
-        elif isinstance(value, list):
-            value_desc['type'] = list
-        else:
-            assert False, 'This should never happen!'
-
-        return value_desc
-
-    @classmethod
     def __assert_valid_key(cls, key):
         if cls.__reo.fullmatch(key) is None:
             raise JCfgInvalidKeyError(
                 'Invalid config key: {}, only [A-Za-z0-9_] is allowed.'.format(key))
         else:
             return
-
-    @classmethod
-    def __check_value_type(cls, value):
-        if isinstance(value, dict):
-            if 'default' in value and cls.__check_value_type(value['default']) == 'pure_value':
-                return 'custom_value'  # is a subconfig
-            else:
-                return 'subconfig'
-        elif isinstance(value, int) or isinstance(value, float) or isinstance(value, list) or isinstance(value, str):
-            return 'pure_value'
-        else:
-            raise JCfgInvalidValueError(
-                'Invalid value error: {}'.format(str(value)))
 
     def __getitem__(self, key):
         key_list = key.split('.')
@@ -90,10 +42,8 @@ class JsonCfg(object):
     def __getattr__(self, name):
         if name == '_JsonCfg__config_desc':
             return object.__getattr__(self, name)
-        
+
         self.__assert_valid_key(name)
-        # print('getattr: {}'.format(name))
-        # print('config_desc type: {}'.format(type(self.__config_desc)))
         if name not in self.__config_desc:
             return AttributeError('Config key {} not found'.format(name))
         else:
@@ -127,10 +77,15 @@ class JsonCfg(object):
     def __setitem__(self, key, value):
         key_list = key.split('.')
         self.__set_value_by_key_list(key_list, value)
-    
+
     def __setattr__(self, key, value):
-        # print('setattr: {}'.format(key))
-        if key == '_JsonCfg__config_desc' or key not in self.__config_desc:
+        if key == '_JsonCfg__config_desc':
+            if key not in self.__dict__:
+                return object.__setattr__(self, key, value)
+            else:
+                return
+
+        if key not in self.__config_desc:
             return object.__setattr__(self, key, value)
         else:
             return self.__setitem__(key, value)
@@ -151,10 +106,31 @@ class JsonCfg(object):
         else:
             _value = self.__config_desc[key]
             if isinstance(_value, JsonCfg):
-                raise JCfgInvalidSetValueError('Cannot set value to an exist subconfig.')
+                raise JCfgInvalidSetValueError(
+                    'Cannot set value to an exist subconfig.')
             else:
                 assert isinstance(_value, JsonCfgValue), type(_value)
                 return _value.set(value)
+
+    def _get_keys(self):
+        key_list = []
+        for key in sorted(self.__config_desc.keys()):
+            if isinstance(self.__config_desc[key], JsonCfgValue):
+                key_list.append(key)
+            elif isinstance(self.__config_desc[key], JsonCfg):
+                key_list.extend(self.__config_desc[key]._get_keys())
+        return key_list
+
+    def update_from_pyargs(self):
+        parser = self.__create_argparser()
+        parser.parse_args()
+        self.__update_from_parser(parser)
+
+    def __create_argparser(self):
+        pass
+
+    def __update_from_parser(self, parser):
+        pass
 
 
 class JsonCfgValue(object):
@@ -166,6 +142,10 @@ class JsonCfgValue(object):
 
     def get(self):
         return self.__value
+
+    @property
+    def type(self):
+        return self.__type
 
     def set(self, value):
         if isinstance(value, self.__type):
