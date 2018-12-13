@@ -124,12 +124,80 @@ class TestSetItem(unittest.TestCase):
         except JCfgValueTypeMismatchError:
             self.assertTrue(True)
 
-
         try:
             self.config.f.f_d = 'fail'
             self.fail('This line should never run!')
         except JCfgInvalidSetValueError:
             self.assertTrue(True)
+        
+
+class TestArgparser(unittest.TestCase):
+    def setUp(self):
+        test_config = {
+            'a': 1,
+            'b': 1.0,
+            'c': 'val',
+            'd': [1, 2, 3, 4],
+            'e': {
+                'default': 1,
+                'custom_attr': 't',
+            },
+            'f': {
+                'f_a': 1,
+                'f_b': 2,
+                'f_c': {
+                    'default': 1,
+                    'custom_attr': 't',
+                },
+                'f_d': {
+                    'f_d_a': 's',
+                    'f_d_b': {
+                        'default': ['a', 'b', 'c']
+                    }
+                }
+            }
+        }
+        self.config = JsonCfg(test_config)
+
+    def test_set(self):
+        self.config['b'] = 2.0
+        self.assertEqual(self.config['b'], 2.0)
+
+def test_argparser():
+    test_config = {
+            'a': 1,
+            'b': 1.0,
+            'c': 'val',
+            'd': [1, 2, 3, 4],
+            'e': {
+                'default': 1,
+                'custom_attr': 't',
+            },
+            'f': {
+                'f_a': 1,
+                'f_b': 2,
+                'f_c': {
+                    'default': 1,
+                    'custom_attr': 't',
+                },
+                'f_d': {
+                    'f_d_a': 's',
+                    'f_d_b': {
+                        'default': ['a', 'b', 'c']
+                    }
+                }
+            }
+        }
+    
+    jcfg = JsonCfg(test_config)
+    for key in jcfg.keys():
+        print('{} -> {}'.format(key, jcfg[key]))
+    jcfg.parse_args(description='test jcfg')
+    for key in jcfg.keys():
+        print('{} -> {}'.format(key, jcfg[key]))
+
+
 
 if __name__ == '__main__':
+    test_argparser()
     unittest.main()

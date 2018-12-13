@@ -37,7 +37,7 @@ class JsonCfg(object):
 
     def __getitem__(self, key):
         key_list = key.split('.')
-        return self.__get_value_by_key_list(key_list)
+        return self.__get_value_by_key_list(key_list).get()
 
     def __getattr__(self, name):
         if name == '_JsonCfg__config_desc':
@@ -71,8 +71,8 @@ class JsonCfg(object):
             if isinstance(_value, JsonCfg):
                 return _value
             else:
-                assert isinstance(_value, JsonCfgValue), type(_value)
-                return _value.get()
+                assert isinstance(_value, JsonCfgValue), _value.type
+                return _value
 
     def __setitem__(self, key, value):
         key_list = key.split('.')
@@ -109,29 +109,36 @@ class JsonCfg(object):
                 raise JCfgInvalidSetValueError(
                     'Cannot set value to an exist subconfig.')
             else:
-                assert isinstance(_value, JsonCfgValue), type(_value)
+                assert isinstance(_value, JsonCfgValue), _value.type
                 return _value.set(value)
 
-    def _get_keys(self):
-        key_list = []
+    def keys(self):
         for key in sorted(self.__config_desc.keys()):
             if isinstance(self.__config_desc[key], JsonCfgValue):
-                key_list.append(key)
+                yield key
             elif isinstance(self.__config_desc[key], JsonCfg):
-                key_list.extend(self.__config_desc[key]._get_keys())
-        return key_list
+                for _k in self.__config_desc[key].keys():
+                    yield '{}.{}'.format(key, _k)
 
-    def update_from_pyargs(self):
-        parser = self.__create_argparser()
-        parser.parse_args()
-        self.__update_from_parser(parser)
+    def parse_args(self, description=None):
+        parser = argparse.ArgumentParser(description=description)
+        
+        all_keys = list(self.keys())
+        for key in all_keys:
+            self.__get_value_by_key_list(key.split('.')).add_to_argument(parser, key)
+        
+        args = parser.parse_args()
 
-    def __create_argparser(self):
-        pass
-
-    def __update_from_parser(self, parser):
-        pass
-
+        for k, v in vars(args):
+            if k not in all_keys:
+                raise ValueError('Unkown config key encountered: {}'.format(k))
+            if isinstance(v, list):
+                assert self.__getitem__(k).type == list
+                new_list = self.__getitem__(k).get().extend(v)
+                self.__setitem__(k, new_list)
+            else:
+                self.__setitem__(k, v)
+        
 
 class JsonCfgValue(object):
     def __init__(self, value, value_type, default, **extra_attr):
@@ -156,6 +163,13 @@ class JsonCfgValue(object):
             else:
                 raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
                     str(self.__type), str(type(value))))
+    
+    def add_to_argument(self, arg_parser, key):
+        if self.__type == list:
+            arg_parser.add_argument('--{}'.format(key), nargs='*')
+        else:
+            arg_parser.add_argument('--{}'.format(key), type=self.__type)
+        return
 
     @classmethod
     def create_from_value(cls, value):
@@ -187,3 +201,5 @@ class JsonCfgValue(object):
         assert 'default' in value
         default = value.pop('default')
         return cls.__create_from_pure_value(default, **value)
+
+
