@@ -1,5 +1,6 @@
 import re
 import argparse
+import json
 
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
     JCfgInvalidSetValueError
@@ -47,8 +48,8 @@ class JsonCfg(object):
         return 
 
     def __getattr__(self, name):
-        if name == '_JsonCfg__config_desc':
-            return object.__getattr__(self, name)
+        # if name == '_JsonCfg__config_desc':
+        #     return object.__getattr__(self, name)
 
         self.__assert_valid_key(name)
         if name not in self.__config_desc:
@@ -94,7 +95,7 @@ class JsonCfg(object):
             if key not in self.__dict__:
                 return object.__setattr__(self, key, value)
             else:
-                return
+                raise JCfgInvalidSetValueError('_JsonCfg__config_desc is a reserved key!')
 
         if key not in self.__config_desc:
             return object.__setattr__(self, key, value)
@@ -130,18 +131,31 @@ class JsonCfg(object):
             elif isinstance(self.__config_desc[key], JsonCfg):
                 for _k in self.__config_desc[key].keys():
                     yield '{}.{}'.format(key, _k)
+    
+    def items(self):
+        for key in self.keys():
+            yield key, self.__getitem__(key)
 
-    def parse_args(self, description=None):
+    def parse_args(self, description=None, update_from_file=True):
         parser = argparse.ArgumentParser(description=description)
         
+        cfg_file_dest = '___jcfg_path'
+        if update_from_file is True:
+            parser.add_argument('-c', help='file path to update config', type=str, metavar='CONFIG_PATH', dest=cfg_file_dest)
+
         all_keys = list(self.keys())
         for key in all_keys:
             self.__get_value_by_key_list(key.split('.')).add_to_argument(parser, key)
         
         args = parser.parse_args()
+        args = vars(args)
+        if update_from_file is True:
+            cfg_path = args.pop(cfg_file_dest)
+            if cfg_path is not None:
+                self.update_from_file(cfg_path)
 
-        for k, v in vars(args).items():
-            print('{} -> {}'.format(k, v))
+        for k, v in args.items():
+            # print('{} -> {}'.format(k, v))
             if v is None:
                 continue
             if k not in all_keys:
@@ -156,6 +170,17 @@ class JsonCfg(object):
                 cfg_value.set(value)
             else:
                 cfg_value.set(v)
+    
+    def update_from_file(self, json_path):
+        with open(json_path) as rfile:
+            json_cfg = json.load(rfile)
+        
+        for k, v in json_cfg.items():
+            self.__setitem__(k, v)
+    
+    def print_config(self):
+        for k in self.keys():
+            print('{} = {}'.format(k, self.__getitem__(k)))
         
 
 class JsonCfgValue(object):
