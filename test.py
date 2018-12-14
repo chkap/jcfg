@@ -163,6 +163,7 @@ class TestArgparser(unittest.TestCase):
         self.config['b'] = 2.0
         self.assertEqual(self.config['b'], 2.0)
 
+
 def test_argparser():
     test_config = {
             'a': 1,
@@ -199,5 +200,6 @@ def test_argparser():
 
 
 if __name__ == '__main__':
+    # test_argparser()
+    # unittest.main()
     test_argparser()
-    unittest.main()

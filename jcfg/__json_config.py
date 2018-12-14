@@ -37,7 +37,14 @@ class JsonCfg(object):
 
     def __getitem__(self, key):
         key_list = key.split('.')
-        return self.__get_value_by_key_list(key_list).get()
+        cfg_value = self.__get_value_by_key_list(key_list)
+        if isinstance(cfg_value, JsonCfg):
+            return cfg_value
+        elif isinstance(cfg_value, JsonCfgValue):
+            return cfg_value.get()
+        else:
+            assert False, 'This should never happen!'
+        return 
 
     def __getattr__(self, name):
         if name == '_JsonCfg__config_desc':
@@ -56,12 +63,16 @@ class JsonCfg(object):
 
     def __get_value_by_key_list(self, key_list):
         assert len(key_list) >= 1
-        if len(key_list) == 1:
-            return self.__get_value(key_list[0])
-        else:
-            return self.__get_value_by_key_list(key_list[:-1])[key_list[-1]]
+        cfg_value = self
+        for key in key_list:
+            cfg_value = cfg_value._get_value(key)
+        return cfg_value
+        # if len(key_list) == 1:
+        #     return self._get_value(key_list[0])
+        # else:
+        #     return self.__get_value_by_key_list(key_list[:-1])[key_list[-1]]
 
-    def __get_value(self, key):
+    def _get_value(self, key):
         self.__assert_valid_key(key)
         if key not in self.__config_desc:
             raise JCfgKeyNotFoundError(
@@ -129,15 +140,22 @@ class JsonCfg(object):
         
         args = parser.parse_args()
 
-        for k, v in vars(args):
+        for k, v in vars(args).items():
+            print('{} -> {}'.format(k, v))
+            if v is None:
+                continue
             if k not in all_keys:
                 raise ValueError('Unkown config key encountered: {}'.format(k))
+            
+            k_list = k.split('.')
+            cfg_value = self.__get_value_by_key_list(k_list)
             if isinstance(v, list):
-                assert self.__getitem__(k).type == list
-                new_list = self.__getitem__(k).get().extend(v)
-                self.__setitem__(k, new_list)
+                assert cfg_value.type == list
+                value = cfg_value.get()
+                value.extend(v)
+                cfg_value.set(value)
             else:
-                self.__setitem__(k, v)
+                cfg_value.set(v)
         
 
 class JsonCfgValue(object):
@@ -165,10 +183,11 @@ class JsonCfgValue(object):
                     str(self.__type), str(type(value))))
     
     def add_to_argument(self, arg_parser, key):
+        help_info = 'type: {}'.format(self.type)
         if self.__type == list:
-            arg_parser.add_argument('--{}'.format(key), nargs='*')
+            arg_parser.add_argument('--{}'.format(key), nargs='*', help=help_info)
         else:
-            arg_parser.add_argument('--{}'.format(key), type=self.__type)
+            arg_parser.add_argument('--{}'.format(key), type=self.__type, help=help_info)
         return
 
     @classmethod
