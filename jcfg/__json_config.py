@@ -164,10 +164,7 @@ class JsonCfg(object):
             k_list = k.split('.')
             cfg_value = self.__get_value_by_key_list(k_list)
             if isinstance(v, list):
-                assert cfg_value.type == list
-                value = cfg_value.get()
-                value.extend(v)
-                cfg_value.set(value)
+                cfg_value.set(v)
             else:
                 cfg_value.set(v)
     
