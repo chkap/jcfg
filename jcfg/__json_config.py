@@ -56,6 +56,7 @@ class JsonCfg(object):
             return AttributeError('Config key {} not found'.format(name))
         else:
             _value = self.__config_desc[name]
+            # print('{} -> {}'.format(name, _value))
             if isinstance(_value, JsonCfg):
                 return _value
             else:
@@ -178,7 +179,16 @@ class JsonCfg(object):
     def print_config(self):
         for k in self.keys():
             print('{} = {}'.format(k, self.__getitem__(k)))
-        
+
+
+def _str2bool(s):
+    if s.lower() in ['1', 'true']:
+        return True
+    elif s.lower() in ['0', 'false']:
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value (1 or true for True, 0 or false for False) expected.')
+
 
 class JsonCfgValue(object):
     def __init__(self, value, value_type, default, **extra_attr):
@@ -186,6 +196,7 @@ class JsonCfgValue(object):
         self.__type = value_type
         self.__default = default
         self.__extra = extra_attr
+        # print('{} -> {}'.format(value, value_type))
 
     def get(self):
         return self.__value
@@ -205,9 +216,11 @@ class JsonCfgValue(object):
                     str(self.__type), str(type(value))))
     
     def add_to_argument(self, arg_parser, key):
-        help_info = 'type: {}'.format(self.type)
+        help_info = 'type: {}, default: {}'.format(self.type, self.get())
         if self.__type == list:
             arg_parser.add_argument('--{}'.format(key), nargs='*', help=help_info)
+        elif self.__type == bool:
+            arg_parser.add_argument('--{}'.format(key), type=_str2bool, help=help_info)
         else:
             arg_parser.add_argument('--{}'.format(key), type=self.__type, help=help_info)
         return
@@ -223,7 +236,9 @@ class JsonCfgValue(object):
 
     @classmethod
     def __create_from_pure_value(cls, value, **extra_attr):
-        if isinstance(value, int):
+        if isinstance(value, bool):
+            _type = bool
+        elif isinstance(value, int):
             _type = int
         elif isinstance(value, float):
             _type = float
@@ -233,7 +248,7 @@ class JsonCfgValue(object):
             _type = list
         else:
             raise JCfgInvalidValueError(
-                'Invalid value error: {}'.format(str(value)))
+                'Invalid value: {}'.format(str(value)))
         return JsonCfgValue(value, _type, value, **extra_attr)
 
     @classmethod
