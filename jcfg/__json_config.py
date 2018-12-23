@@ -173,7 +173,20 @@ class JsonCfg(object):
         with open(json_path) as rfile:
             json_cfg = json.load(rfile)
         
-        for k, v in json_cfg.items():
+        def _load_key_value_from_json(json_dict):
+            _ret_dict = {}
+            for k, v in json_dict.items():
+                if isinstance(v, dict):
+                    _sub_ret_dict = _load_key_value_from_json(v)
+                    for sub_k, sub_v in _sub_ret_dict.items():
+                        _new_k = '.'.join([k, sub_k])
+                        _ret_dict[_new_k] = sub_v
+                else:
+                    _ret_dict[k] = v
+            return _ret_dict
+        
+        new_cfg = _load_key_value_from_json(json_cfg)
+        for k, v in new_cfg.items():
             self.__setitem__(k, v)
     
     def print_config(self):
