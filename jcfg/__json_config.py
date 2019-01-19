@@ -45,7 +45,6 @@ class JsonCfg(object):
             return cfg_value.get()
         else:
             assert False, 'This should never happen!'
-        return 
 
     def __getattr__(self, name):
         # if name == '_JsonCfg__config_desc':
@@ -53,7 +52,7 @@ class JsonCfg(object):
 
         self.__assert_valid_key(name)
         if name not in self.__config_desc:
-            return AttributeError('Config key {} not found'.format(name))
+            raise AttributeError('Config key {} not found'.format(name))
         else:
             _value = self.__config_desc[name]
             # print('{} -> {}'.format(name, _value))
