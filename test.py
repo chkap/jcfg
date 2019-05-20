@@ -181,7 +181,8 @@ def test_argparser():
                 'f_d': {
                     'f_d_a': 's',
                     'f_d_b': {
-                        'default': ['a', 'b', 'c']
+                        'default': ['a', 'b', 'c'],
+                        'desc': 'test_description'
                     }
                 }
             }
@@ -217,10 +218,11 @@ class TestConfigMeta(unittest.TestCase):
 
     def test_parse_from_args(self):
         self.config.print_config()
-        self.assertTrue('this is a test description!' == self.config.get_meta('desc'))
+        self.config.parse_args()
+        self.assertTrue(True)
 
 
 if __name__ == '__main__':
-    # test_argparser()
-    unittest.main()
+    test_argparser()
+    # unittest.main()
     # test_argparser()
