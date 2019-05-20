@@ -135,6 +135,20 @@ class JsonCfg(object):
     def items(self):
         for key in self.keys():
             yield key, self.__getitem__(key)
+    
+    def public_keys(self):
+        for key in sorted(self.__config_desc.keys()):
+            if key.startswith('_'):
+                continue
+            if isinstance(self.__config_desc[key], JsonCfgValue):
+                yield key
+            elif isinstance(self.__config_desc[key], JsonCfg):
+                for _k in self.__config_desc[key].public_keys():
+                    yield '{}.{}'.format(key, _k)
+    
+    def public_items(self):
+        for key in self.public_keys():
+            yield key, self.__getitem__(key)
 
     def parse_args(self, description=None, update_from_file=True):
         parser = argparse.ArgumentParser(description=description)
@@ -143,7 +157,7 @@ class JsonCfg(object):
         if update_from_file is True:
             parser.add_argument('-c', help='file path to update config', type=str, metavar='CONFIG_PATH', dest=cfg_file_dest)
 
-        all_keys = list(self.keys())
+        all_keys = list(self.public_keys())
         for key in all_keys:
             self.__get_value_by_key_list(key.split('.')).add_to_argument(parser, key)
         
@@ -181,6 +195,8 @@ class JsonCfg(object):
                         _new_k = '.'.join([k, sub_k])
                         _ret_dict[_new_k] = sub_v
                 else:
+                    if k.startswith('_'):
+                        raise ValueError('Config key starts with "_" is private key, which is immutable!')
                     _ret_dict[k] = v
             return _ret_dict
         

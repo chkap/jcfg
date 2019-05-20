@@ -193,8 +193,21 @@ def test_argparser():
     jcfg.print_config()
 
 
+class TestPublicKey(unittest.TestCase):
+    def setUp(self):
+        test_config = {
+            '_this_is_private_key': 1,
+            'this_is_public_key': 1
+        }
+        self.config = JsonCfg(test_config)
+
+    def test_parse_from_args(self):
+        self.config.print_config()
+        self.assertTrue(True)
+
+
 
 if __name__ == '__main__':
-    test_argparser()
-    # unittest.main()
+    # test_argparser()
+    unittest.main()
     # test_argparser()
