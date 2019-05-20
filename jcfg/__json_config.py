@@ -243,8 +243,18 @@ class JsonCfgValue(object):
                 raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
                     str(self.__type), str(type(value))))
     
+    def get_meta(self, key):
+        if key in self.__extra:
+            return self.__extra[key]
+        else:
+            return None
+    
     def add_to_argument(self, arg_parser, key):
-        help_info = 'type: {}, default: {}'.format(self.type, self.get())
+        desc = self.get_meta('desc')
+        if desc is not None:
+            help_info = '{}. type: {}, default: {}'.format(desc, self.type, self.get())
+        else:
+            help_info = 'type: {}, default: {}'.format(self.type, self.get())
         if self.__type == list:
             arg_parser.add_argument('--{}'.format(key), nargs='*', help=help_info)
         elif self.__type == bool:
@@ -284,6 +294,10 @@ class JsonCfgValue(object):
         assert isinstance(value, dict)
         assert 'default' in value
         default = value.pop('default')
+
+        # get description
+        desc = value.get('desc', '')
+        assert isinstance(desc, str), 'Description for a key should be str!'
         return cls.__create_from_pure_value(default, **value)
 
 

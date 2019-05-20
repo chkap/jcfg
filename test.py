@@ -205,6 +205,19 @@ class TestPublicKey(unittest.TestCase):
         self.config.print_config()
         self.assertTrue(True)
 
+class TestConfigMeta(unittest.TestCase):
+    def setUp(self):
+        test_config = {
+            'foo': {
+                'default': 2,
+                'desc': 'this is a test description!'
+            }
+        }
+        self.config = JsonCfg(test_config)
+
+    def test_parse_from_args(self):
+        self.config.print_config()
+        self.assertTrue('this is a test description!' == self.config.get_meta('desc'))
 
 
 if __name__ == '__main__':
