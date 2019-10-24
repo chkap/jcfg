@@ -53,8 +53,8 @@ As you can see above, these config options can be loaded from either cli input o
 
 The config options should be defined based on the dict object provided when constructing `JsonCfg`. Each key in the dict will be the name of an config option, and the corresponding value will be either the default value for this config or a sub-config under this key name, based on:
 
-    1. if the value is a dict without the key `_default`, this value will define a sub-config under this key,
-    2. otherwise, the value indicates the default value (and also some other meta info) for this key. The type of this config will be implicitly determined as the type of the default value. 
+1. if the value is a dict without the key `_default`, this value will define a sub-config under this key,
+2. otherwise, the value indicates the default value (and also some other meta info) for this key. The type of this config will be implicitly determined as the type of the default value. 
 
 For better understanding, here is an example:
 
@@ -104,7 +104,7 @@ These config can be updated by `python3 test.py -c config.json`.
 
 Note that, sub-config value can be defined as a dict or key-value pair with full config path, like above.
 
-If both config file and cli option are provided, the config will be first overrided from config file, then overrided from cli options.
+If both config file and cli option are provided, the config will be **first overrided from config file, then overrided from cli options**.
 
 ## Access to configs.
 
