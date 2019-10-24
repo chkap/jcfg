@@ -5,10 +5,12 @@ import json
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
     JCfgInvalidSetValueError
 
+_DEFAULT_KEY = '_default'
 
 class JsonCfg(object):
     __valid_key_pattern = r'[A-Za-z_][A-Za-z0-9_]*'
     __reo = re.compile(__valid_key_pattern)
+
 
     def __init__(self, config_meta):
         if not isinstance(config_meta, dict):
@@ -22,7 +24,7 @@ class JsonCfg(object):
         for key in config_meta:
             cls.__assert_valid_key(key)
             value = config_meta[key]
-            if isinstance(value, dict) and 'default' not in value:
+            if isinstance(value, dict) and _DEFAULT_KEY not in value:
                 config_desc[key] = JsonCfg(config_meta[key])
             else:
                 config_desc[key] = JsonCfgValue.create_from_value(value)
@@ -250,7 +252,7 @@ class JsonCfgValue(object):
             return None
     
     def add_to_argument(self, arg_parser, key):
-        desc = self.get_meta('desc')
+        desc = self.get_meta('_desc')
         if desc is not None:
             help_info = '{}. type: {}, default: {}'.format(desc, self.type, self.get())
         else:
@@ -267,7 +269,7 @@ class JsonCfgValue(object):
     def create_from_value(cls, value):
         '''value can be a pure value (int, float, str, or list) or a custom dict value
         '''
-        if isinstance(value, dict) and 'default' in value:
+        if isinstance(value, dict) and _DEFAULT_KEY in value:
             return cls.__create_from_dict_value(value)
         else:
             return cls.__create_from_pure_value(value)
@@ -292,11 +294,11 @@ class JsonCfgValue(object):
     @classmethod
     def __create_from_dict_value(cls, value):
         assert isinstance(value, dict)
-        assert 'default' in value
-        default = value.pop('default')
+        assert _DEFAULT_KEY in value
+        default = value.pop(_DEFAULT_KEY)
 
         # get description
-        desc = value.get('desc', '')
+        desc = value.get('_desc', '')
         assert isinstance(desc, str), 'Description for a key should be str!'
         return cls.__create_from_pure_value(default, **value)
 

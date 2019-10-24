@@ -1,5 +1,7 @@
 
 import unittest
+import sys
+sys.path.insert(0, '.')
 
 from jcfg import JsonCfg
 from jcfg import JCfgKeyNotFoundError, JCfgInvalidKeyError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError
@@ -10,20 +12,20 @@ test_config = {
     'c': 'val',
     'd': [1, 2, 3, 4],
     'e': {
-        'default': True,
-        'custom_attr': 't',
+        '_default': True,
+        '_custom_attr': 't',
     },
     'f': {
         'f_a': 1,
         'f_b': 2,
         'f_c': {
-            'default': 1,
-            'custom_attr': 't',
+            '_default': 1,
+            '_custom_attr': 't',
         },
         'f_d': {
             'f_d_a': 's',
             'f_d_b': {
-                'default': ['a', 'b', 'c']
+                '_default': ['a', 'b', 'c']
             }
         }
     }
@@ -52,20 +54,20 @@ class TestGetItem(unittest.TestCase):
             'c': 'val',
             'd': [1, 2, 3, 4],
             'e': {
-                'default': True,
-                'custom_attr': 't',
+                '_default': True,
+                '_custom_attr': 't',
             },
             'f': {
                 'f_a': 1,
                 'f_b': 2,
                 'f_c': {
-                    'default': 1,
-                    'custom_attr': 't',
+                    '_default': 1,
+                    '_custom_attr': 't',
                 },
                 'f_d': {
                     'f_d_a': 's',
                     'f_d_b': {
-                        'default': ['a', 'b', 'c']
+                        '_default': ['a', 'b', 'c']
                     }
                 }
             }
@@ -118,20 +120,20 @@ class TestSetItem(unittest.TestCase):
             'c': 'val',
             'd': [1, 2, 3, 4],
             'e': {
-                'default': True,
-                'custom_attr': 't',
+                '_default': True,
+                '_custom_attr': 't',
             },
             'f': {
                 'f_a': 1,
                 'f_b': 2,
                 'f_c': {
-                    'default': 1,
-                    'custom_attr': 't',
+                    '_default': 1,
+                    '_custom_attr': 't',
                 },
                 'f_d': {
                     'f_d_a': 's',
                     'f_d_b': {
-                        'default': ['a', 'b', 'c']
+                        '_default': ['a', 'b', 'c']
                     }
                 }
             }
@@ -168,21 +170,21 @@ def test_argparser():
             'c': 'val',
             'd': [1, 2, 3, 4],
             'e': {
-                'default': True,
-                'custom_attr': 't',
+                '_default': True,
+                '_custom_attr': 't',
             },
             'f': {
                 'f_a': 1,
                 'f_b': 2,
                 'f_c': {
-                    'default': 1,
-                    'custom_attr': 't',
+                    '_default': 1,
+                    '_custom_attr': 't',
                 },
                 'f_d': {
                     'f_d_a': 's',
                     'f_d_b': {
-                        'default': ['a', 'b', 'c'],
-                        'desc': 'test_description'
+                        '_default': ['a', 'b', 'c'],
+                        '_desc': 'test_description'
                     }
                 }
             }
@@ -210,8 +212,8 @@ class TestConfigMeta(unittest.TestCase):
     def setUp(self):
         test_config = {
             'foo': {
-                'default': 2,
-                'desc': 'this is a test description!'
+                '_default': 2,
+                '_desc': 'this is a test description!'
             }
         }
         self.config = JsonCfg(test_config)
@@ -223,6 +225,6 @@ class TestConfigMeta(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    test_argparser()
-    # unittest.main()
+    # test_argparser()
+    unittest.main()
     # test_argparser()
