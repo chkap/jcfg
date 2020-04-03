@@ -88,14 +88,16 @@ python3 test.py --sub_config.sub_int 2
 
 ## To load configs from file
 
-All configs can also be loaded from a json file. Here is an examples:
+All configs can also be loaded from a json file with a more tolerant json loader: [jstyleson](https://github.com/linjackson78/jstyleson), which supports js-style comments and also allows trailing comma. Here is an examples:
 
 ```json
 \\ config.json
+/* js-style comments supported!
+*/
 {
-    "option_str": "new_string",
+    "option_str": "new_string",  // in-line comments supported!
     "sub_config":{
-        "sub_int": 1,
+        "sub_int": 1,   // trailing comma allowed
     },
     "sub_config.sub_float": 3
 }
@@ -126,7 +128,9 @@ cfg['sub_config.sub_int']
 * '_desc' is another reserved key for defining cli description of config key
 * Some other reserved key startswith `_` may be added someday, to provide more advanced meta control.
 
+# Test
 
+Run `python3 test_main.py -v`.
 
 
 

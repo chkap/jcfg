@@ -2,6 +2,7 @@
 import unittest
 import sys
 sys.path.insert(0, '.')
+import subprocess
 
 from jcfg import JsonCfg
 from jcfg import JCfgKeyNotFoundError, JCfgInvalidKeyError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError
@@ -162,39 +163,12 @@ class TestSetItem(unittest.TestCase):
         except JCfgInvalidSetValueError:
             self.assertTrue(True)
 
+class TestParseArgs(unittest.TestCase):
 
-def test_argparser():
-    test_config = {
-            'a': 1,
-            'b': 1.0,
-            'c': 'val',
-            'd': [1, 2, 3, 4],
-            'e': {
-                '_default': True,
-                '_custom_attr': 't',
-            },
-            'f': {
-                'f_a': 1,
-                'f_b': 2,
-                'f_c': {
-                    '_default': 1,
-                    '_custom_attr': 't',
-                },
-                'f_d': {
-                    'f_d_a': 's',
-                    'f_d_b': {
-                        '_default': ['a', 'b', 'c'],
-                        '_desc': 'test_description'
-                    }
-                }
-            }
-        }
-    
-    jcfg = JsonCfg(test_config)
-    jcfg.print_config()
-    jcfg.parse_args(description='test jcfg')
-    jcfg.print_config()
-
+    def test_argparser(self):
+        self.assertTrue(True, msg='Testing argparser from CLI success!')
+        subprocess.check_call(['python3', 'test_parse_from_args_main.py', '-c', 'test_config_with_comments.json', '--a', '5'])
+        self.assertTrue(True, msg='Testing argparser from CLI success!')
 
 class TestPublicKey(unittest.TestCase):
     def setUp(self):
@@ -209,7 +183,8 @@ class TestPublicKey(unittest.TestCase):
         self.assertTrue(True)
 
 class TestConfigMeta(unittest.TestCase):
-    def setUp(self):
+
+    def test_parse_with_config_meta(self):
         test_config = {
             'foo': {
                 '_default': 2,
@@ -217,10 +192,7 @@ class TestConfigMeta(unittest.TestCase):
             }
         }
         self.config = JsonCfg(test_config)
-
-    def test_parse_from_args(self):
         self.config.print_config()
-        self.config.parse_args()
         self.assertTrue(True)
 
 

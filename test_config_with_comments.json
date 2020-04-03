@@ -1,0 +1,14 @@
+/*  The config file will be loaded by jstyleson, which makes it 
+    possible to add js-style comments in json config file.
+    */
+{
+    "a": 8,
+    "d": [1, 2, 3, 4, ],  // trailing comma also allowed!
+    "f.f_d.f_d_a": "update_from_file",  // inline comments supported!
+    "e": false,
+    "f": {
+        "f_d": {
+            "f_d_a": "new_s_from_file",  // trailing comma allowed!
+        }
+    },
+}

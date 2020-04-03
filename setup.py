@@ -6,7 +6,7 @@ with open('./README.md') as rfile:
 
 setuptools.setup(
     name='jcfg',
-    version='0.6.0',
+    version='0.7.0',
     description='A json-based configuration helper lib for python',
     long_description=long_desc,
     long_description_content_type='text/markdown',
@@ -14,6 +14,9 @@ setuptools.setup(
     author_email='d47bc0@gmail.com',
     url='https://github.com/chkap/jcfg',
     packages=['jcfg'],
+    install_requires=[
+        "jstyleson"
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

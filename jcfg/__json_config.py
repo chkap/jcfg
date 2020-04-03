@@ -2,6 +2,8 @@ import re
 import argparse
 import json
 
+import jstyleson
+
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
     JCfgInvalidSetValueError
 
@@ -186,7 +188,7 @@ class JsonCfg(object):
     
     def update_from_file(self, json_path):
         with open(json_path) as rfile:
-            json_cfg = json.load(rfile)
+            json_cfg = jstyleson.load(rfile)
         
         def _load_key_value_from_json(json_dict):
             _ret_dict = {}
