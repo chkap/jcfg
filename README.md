@@ -75,9 +75,17 @@ cfg = jcfg.JsonCfg({
         '_default': 'this_is_default_value', 
         '_desc': 'this_si_description',  # this will provide detailed description for this config when typing --help
     },
-    'option_by_tuple': (2, 'this is a description'),  # this is defined with a 2-size tuple, the 1st is default value, 2rd is description
+    'option_by_tuple': (2, 'this is a description'),  # this option is defined with a 2-size tuple, the 1st is default value, 2rd is description
 })
 ```
+
+The config option value currently only supports following types:
+- int
+- float
+- str
+- list
+
+Note that, if you want a config option with type of dict, you'd better define it as an 2-size list, then parse this option as dict in your code yourself.
 
 ## To load configs from cli
 
