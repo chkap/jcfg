@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, '.')
+sys.path.insert(0, '..')
 
 from jcfg import JsonCfg
 
@@ -27,7 +27,8 @@ def main():
                         '_desc': 'test_description'
                     }
                 }
-            }
+            },
+            'g': (3, 'this is a description str')  # define an option with 2-size tuple
         }
     
     jcfg = JsonCfg(test_config)

@@ -1,7 +1,7 @@
 
 import unittest
 import sys
-sys.path.insert(0, '.')
+sys.path.insert(0, '..')
 import subprocess
 
 from jcfg import JsonCfg
@@ -167,7 +167,8 @@ class TestParseArgs(unittest.TestCase):
 
     def test_argparser(self):
         self.assertTrue(True, msg='Testing argparser from CLI success!')
-        subprocess.check_call(['python3', 'test_parse_from_args_main.py', '-c', 'test_config_with_comments.json', '--a', '5'])
+        subprocess.check_call(['python3', 'test_parse_from_args_main.py', '-c', 'test_config_with_comments.json',
+            '-s', 'test_save_output.json', '--a', '5'])
         self.assertTrue(True, msg='Testing argparser from CLI success!')
 
 class TestPublicKey(unittest.TestCase):
@@ -226,6 +227,15 @@ class TestConfigMeta(unittest.TestCase):
         tmp_dst_file = 'test_tmp_config.json'
         cfg.save_to_file(tmp_dst_file)
         cfg.update_from_file(tmp_dst_file)
+        cfg.print_config()
+
+
+class Test2SizeTuple(unittest.TestCase):
+
+    def test_load_from_2size_tuple(self):
+        cfg = JsonCfg({
+            'a': (1, 'this is a option defined by 2-size tuple')
+        })
         cfg.print_config()
 
 if __name__ == '__main__':

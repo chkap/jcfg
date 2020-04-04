@@ -116,4 +116,5 @@ dmypy.json
 
 .vscode/
 
-test_tmp_config.json
+test/test_tmp_config.json
+test/test_save_output.json

@@ -74,7 +74,8 @@ cfg = jcfg.JsonCfg({
     'not_sub_config': {  # however, this won't define a sub-config, but an config with value type: string
         '_default': 'this_is_default_value', 
         '_desc': 'this_si_description',  # this will provide detailed description for this config when typing --help
-    }
+    },
+    'option_by_tuple': (2, 'this is a description'),  # this is defined with a 2-size tuple, the 1st is default value, 2rd is description
 })
 ```
 
@@ -130,7 +131,7 @@ cfg['sub_config.sub_int']
 
 # Test
 
-Run `python3 test_main.py -v`.
+Run `cd test; python3 test_main.py -v`.
 
 
 

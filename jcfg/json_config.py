@@ -168,12 +168,14 @@ class JsonCfg(object):
         for key in self.public_keys():
             yield key, self.__getitem__(key)
 
-    def parse_args(self, description=None, update_from_file=True):
+    def parse_args(self, description=None):
         parser = argparse.ArgumentParser(description=description)
         
-        cfg_file_dest = '___jcfg_path'
-        if update_from_file is True:
-            parser.add_argument('-c', help='file path to update config', type=str, metavar='CONFIG_PATH', dest=cfg_file_dest)
+        cfg_file_dest = '___jcfg_load_path'
+        parser.add_argument('-c', help='file path to update config', type=str, metavar='CONFIG_PATH', dest=cfg_file_dest)
+
+        cfg_save_dest = '___jcfg_save_path'
+        parser.add_argument('-s', help='file path to dump final config', type=str, metavar='SAVE_PATH', dest=cfg_save_dest)
 
         all_keys = list(self.public_keys())
         for key in all_keys:
@@ -181,10 +183,11 @@ class JsonCfg(object):
         
         args = parser.parse_args()
         args = vars(args)
-        if update_from_file is True:
-            cfg_path = args.pop(cfg_file_dest)
-            if cfg_path is not None:
-                self.update_from_file(cfg_path)
+        cfg_path = args.pop(cfg_file_dest)
+        if cfg_path is not None:
+            self.update_from_file(cfg_path)
+
+        cfg_save_path = args.pop(cfg_save_dest)
 
         for k, v in args.items():
             if v is None:
@@ -198,6 +201,9 @@ class JsonCfg(object):
                 cfg_value.set(v)
             else:
                 cfg_value.set(v)
+        
+        if cfg_save_path is not None:
+            self.save_to_file(cfg_save_path)
     
     def update_from_file(self, json_path):
         with open(json_path) as rfile:
@@ -287,10 +293,21 @@ class JsonCfgValue(object):
 
     @classmethod
     def create_from_value(cls, value):
-        '''value can be a pure value (int, float, str, or list) or a custom dict value
+        '''value can be a pure value (int, float, str, list, tuple) or a custom dict value
         '''
         if isinstance(value, dict) and _DEFAULT_KEY in value:
             return cls.__create_from_dict_value(value)
+        elif isinstance(value, tuple):
+            # support 2-size tuple config value,
+            if len(value) != 2:
+                raise ValueError('Currently only tuple data with size 2 supported: {}'.format(value))
+            else:
+                assert isinstance(value[1], str), 'The second element in the tuple should be of type str, for config description.'
+                dict_value={
+                    '_default': value[0],
+                    '_desc': value[1]
+                }
+                return cls.create_from_value(dict_value)
         else:
             return cls.__create_from_pure_value(value)
 
@@ -308,7 +325,7 @@ class JsonCfgValue(object):
             _type = list
         else:
             raise JCfgInvalidValueError(
-                'Invalid value: {}'.format(str(value)))
+                'Invalid value: {}'.format(value))
         return JsonCfgValue(value, _type, value, **extra_attr)
 
     @classmethod
