@@ -19,3 +19,6 @@ class JCfgValueTypeMismatchError(JCfgError):
 
 class JCfgInvalidSetValueError(JCfgError):
     pass
+
+class JCfgEmptyConfigError(JCfgError):
+    pass

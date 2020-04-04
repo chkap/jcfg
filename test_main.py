@@ -195,6 +195,38 @@ class TestConfigMeta(unittest.TestCase):
         self.config.print_config()
         self.assertTrue(True)
 
+class TestConfigMeta(unittest.TestCase):
+    def test_save_to_file(self):
+        test_config = {
+            'a': 1,
+            'b': 1.0,
+            'c': 'val',
+            'd': [1, 2, 3, 4],
+            'e': {
+                '_default': True,
+                '_custom_attr': 't',
+            },
+            'f': {
+                'f_a': 1,
+                'f_b': 2,
+                'f_c': {
+                    '_default': 1,
+                    '_custom_attr': 't',
+                },
+                'f_d': {
+                    'f_d_a': 's',
+                    'f_d_b': {
+                        '_default': ['a', 'b', 'c']
+                    }
+                }
+            }
+        }
+
+        cfg = JsonCfg(test_config)
+        tmp_dst_file = 'test_tmp_config.json'
+        cfg.save_to_file(tmp_dst_file)
+        cfg.update_from_file(tmp_dst_file)
+        cfg.print_config()
 
 if __name__ == '__main__':
     # test_argparser()

@@ -1,11 +1,12 @@
 import re
 import argparse
 import json
+import pprint
 
 import jstyleson
 
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
-    JCfgInvalidSetValueError
+    JCfgInvalidSetValueError, JCfgEmptyConfigError
 
 _DEFAULT_KEY = '_default'
 
@@ -23,6 +24,8 @@ class JsonCfg(object):
     @classmethod
     def __load_from(cls, config_meta):
         config_desc = {}
+        if len(config_meta) == 0:
+            raise JCfgEmptyConfigError()
         for key in config_meta:
             cls.__assert_valid_key(key)
             value = config_meta[key]
@@ -140,6 +143,17 @@ class JsonCfg(object):
         for key in self.keys():
             yield key, self.__getitem__(key)
     
+    def to_dict(self):
+        dst = {}
+        for key, val in self.__config_desc.items():
+            if isinstance(val, JsonCfgValue):
+                dst[key] = val.get()
+            else:
+                assert isinstance(val, JsonCfg)
+                dst[key] = val.to_dict()
+        
+        return dst
+    
     def public_keys(self):
         for key in sorted(self.__config_desc.keys()):
             if key.startswith('_'):
@@ -173,7 +187,6 @@ class JsonCfg(object):
                 self.update_from_file(cfg_path)
 
         for k, v in args.items():
-            # print('{} -> {}'.format(k, v))
             if v is None:
                 continue
             if k not in all_keys:
@@ -208,9 +221,15 @@ class JsonCfg(object):
         for k, v in new_cfg.items():
             self.__setitem__(k, v)
     
-    def print_config(self):
-        for k in self.keys():
-            print('{} = {}'.format(k, self.__getitem__(k)))
+    def save_to_file(self, json_path, indent=4, sort_keys=True):
+        config_dict = self.to_dict()
+        with open(json_path, 'w') as wf:
+            json.dump(config_dict, wf, indent=indent, sort_keys=sort_keys)
+        
+
+    def print_config(self, indent=4):
+        config_dict = self.to_dict()
+        pprint.pprint(config_dict, indent=4)
 
 
 def _str2bool(s):
@@ -228,7 +247,6 @@ class JsonCfgValue(object):
         self.__type = value_type
         self.__default = default
         self.__extra = extra_attr
-        # print('{} -> {}'.format(value, value_type))
 
     def get(self):
         return self.__value
