@@ -4,6 +4,7 @@ import json
 import pprint
 
 import jstyleson
+import yaml
 
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
     JCfgInvalidSetValueError, JCfgEmptyConfigError, JCfgValidateFailError
@@ -187,15 +188,20 @@ class JsonCfg(object):
         if cfg_save_path is not None:
             self.save_to_file(cfg_save_path)
     
-    def update_from_file(self, json_path):
-        with open(json_path) as rfile:
-            json_cfg = jstyleson.load(rfile)
+    def update_from_file(self, config_path):
+        if config_path.endswith('.yaml'):
+            with open(config_path, encoding='utf-8') as rf:
+                config = yaml.safe_load(rf)
+        else:
+            # load config as json file
+            with open(config_path, encoding='utf-8') as rfile:
+                config = jstyleson.load(rfile)
         
-        def _load_key_value_from_json(json_dict):
+        def _load_key_value_from_dict(config):
             _ret_dict = {}
-            for k, v in json_dict.items():
+            for k, v in config.items():
                 if isinstance(v, dict):
-                    _sub_ret_dict = _load_key_value_from_json(v)
+                    _sub_ret_dict = _load_key_value_from_dict(v)
                     for sub_k, sub_v in _sub_ret_dict.items():
                         _new_k = '.'.join([k, sub_k])
                         _ret_dict[_new_k] = sub_v
@@ -205,15 +211,18 @@ class JsonCfg(object):
                     _ret_dict[k] = v
             return _ret_dict
         
-        new_cfg = _load_key_value_from_json(json_cfg)
+        new_cfg = _load_key_value_from_dict(config)
         for k, v in new_cfg.items():
             self.__setitem__(k, v)
     
-    def save_to_file(self, json_path, indent=4, sort_keys=True):
+    def save_to_file(self, save_path, indent=4, sort_keys=True):
         config_dict = self.to_dict()
-        with open(json_path, 'w') as wf:
-            json.dump(config_dict, wf, indent=indent, sort_keys=sort_keys)
-        
+        if save_path.endswith('.yaml'):
+            with open(save_path, 'w', encoding='utf-8') as wf:
+                yaml.safe_dump(config_dict, wf)
+        else:
+            with open(save_path, 'w') as wf:
+                json.dump(config_dict, wf, indent=indent, sort_keys=sort_keys)
 
     def print_config(self, indent=4):
         config_dict = self.to_dict()

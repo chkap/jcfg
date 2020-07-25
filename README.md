@@ -98,7 +98,7 @@ python3 test.py --sub_config.sub_int 2
 
 ## To load configs from file
 
-All configs can also be loaded from a json file with a more tolerant json loader: [jstyleson](https://github.com/linjackson78/jstyleson), which supports js-style comments and also allows trailing comma. Here is an examples:
+All configs can also be loaded from a **json** file with a more tolerant json loader: [jstyleson](https://github.com/linjackson78/jstyleson), which supports js-style comments and also allows trailing comma, or from **yaml** file. Here is an examples of loading from json:
 
 ```json
 \\ config.json

@@ -3,6 +3,7 @@ import unittest
 import sys
 sys.path.insert(0, '..')
 import subprocess
+from pathlib import Path
 
 from jcfg import JsonCfg
 from jcfg import JCfgKeyNotFoundError, JCfgInvalidKeyError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError, JCfgValidateFailError
@@ -263,6 +264,26 @@ class TestValidate(unittest.TestCase):
             self.assertTrue(False)
         except JCfgValidateFailError:
             pass
+
+
+class TestYaml(unittest.TestCase):
+
+    def test_load_dump(self):
+        output_dir = Path('example_dump')
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        cfg = JsonCfg({
+            'a': {
+                'a': 0,
+                'b': []
+            },
+            'b': {
+                'a': ''
+            }
+        })
+        cfg.update_from_file('example/config.yaml')
+        cfg.save_to_file('example_dump/config_output.yaml')
+
 
 if __name__ == '__main__':
     # test_argparser()
