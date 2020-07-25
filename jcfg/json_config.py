@@ -34,8 +34,6 @@ class JsonCfg(object):
                 config_desc[key] = JsonCfg(config_meta[key])
             else:
                 config_desc[key] = JsonCfgValue.create_from_value(value)
-                if config_desc[key].validate() is False:
-                    raise JCfgValidateFailError('Init config failed because validate failure.')
         return config_desc
 
     @classmethod
@@ -111,7 +109,7 @@ class JsonCfg(object):
                 raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format('.'.join(key_list)))
         jcfg_value.set(value)
         if jcfg_value.validate() is False:
-            raise JCfgValidateFailError()
+            raise JCfgValidateFailError('Validate failure of key: {}={}'.format('.'.join(key_list), value))
 
     def keys(self):
         for key in sorted(self.__config_desc.keys()):
@@ -184,6 +182,8 @@ class JsonCfg(object):
             if not isinstance(cfg_value, JsonCfgValue):
                 raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format(k))
             cfg_value.set(v)
+            if jcfg_value.validate() is False:
+                raise JCfgValidateFailError('Validate failure of key: {}={}'.format(k, v))
         
         if cfg_save_path is not None:
             self.save_to_file(cfg_save_path)
@@ -194,8 +194,8 @@ class JsonCfg(object):
                 config = yaml.safe_load(rf)
         else:
             # load config as json file
-            with open(config_path, encoding='utf-8') as rfile:
-                config = jstyleson.load(rfile)
+            with open(config_path, encoding='utf-8') as rf:
+                config = jstyleson.load(rf)
         
         def _load_key_value_from_dict(config):
             _ret_dict = {}
@@ -227,6 +227,12 @@ class JsonCfg(object):
     def print_config(self, indent=4):
         config_dict = self.to_dict()
         pprint.pprint(config_dict, indent=4)
+    
+    def validate(self):
+        for key in self.keys():
+            jcfg_value = self.__get_by_keys(key.split('.'))
+            if jcfg_value.validate() is False:
+                raise JCfgValidateFailError('Validate failure of key: {}={}'.format(key, jcfg_value.get()))
 
 
 def _str2bool(s):
