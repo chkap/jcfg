@@ -6,7 +6,7 @@ import pprint
 import jstyleson
 
 from .error import JCfgInvalidKeyError, JCfgInvalidValueError, JCfgKeyNotFoundError, JCfgValueTypeMismatchError, \
-    JCfgInvalidSetValueError, JCfgEmptyConfigError
+    JCfgInvalidSetValueError, JCfgEmptyConfigError, JCfgValidateFailError
 
 _DEFAULT_KEY = '_default'
 
@@ -33,6 +33,8 @@ class JsonCfg(object):
                 config_desc[key] = JsonCfg(config_meta[key])
             else:
                 config_desc[key] = JsonCfgValue.create_from_value(value)
+                if config_desc[key].validate() is False:
+                    raise JCfgValidateFailError('Init config failed because validate failure.')
         return config_desc
 
     @classmethod
@@ -45,7 +47,7 @@ class JsonCfg(object):
 
     def __getitem__(self, key):
         key_list = key.split('.')
-        cfg_value = self.__get_value_by_key_list(key_list)
+        cfg_value = self.__get_by_keys(key_list)
         if isinstance(cfg_value, JsonCfg):
             return cfg_value
         elif isinstance(cfg_value, JsonCfgValue):
@@ -69,29 +71,22 @@ class JsonCfg(object):
                 assert isinstance(_value, JsonCfgValue), type(_value)
                 return _value.get()
 
-    def __get_value_by_key_list(self, key_list):
-        assert len(key_list) >= 1
-        cfg_value = self
-        for key in key_list:
-            cfg_value = cfg_value._get_value(key)
-        return cfg_value
-        # if len(key_list) == 1:
-        #     return self._get_value(key_list[0])
-        # else:
-        #     return self.__get_value_by_key_list(key_list[:-1])[key_list[-1]]
-
-    def _get_value(self, key):
+    def _get_value_obj(self, key):
         self.__assert_valid_key(key)
         if key not in self.__config_desc:
             raise JCfgKeyNotFoundError(
                 'Config key: {} is not found'.format(key))
         else:
             _value = self.__config_desc[key]
-            if isinstance(_value, JsonCfg):
-                return _value
-            else:
-                assert isinstance(_value, JsonCfgValue), _value.type
-                return _value
+            assert isinstance(_value, (JsonCfg, JsonCfgValue))
+            return _value
+    
+    def __get_by_keys(self, keys):
+        assert isinstance(keys, list) and len(keys) > 0
+        iter_value = self
+        for key in keys:
+            iter_value = iter_value._get_value_obj(key)
+        return iter_value
 
     def __setitem__(self, key, value):
         key_list = key.split('.')
@@ -110,26 +105,12 @@ class JsonCfg(object):
             return self.__setitem__(key, value)
 
     def __set_value_by_key_list(self, key_list, value):
-        assert len(key_list) >= 1
-        if len(key_list) == 1:
-            self.__set_value(key_list[0], value)
-        else:
-            subconfig = self.__config_desc[key_list[0]]
-            return subconfig.__setitem__('.'.join(key_list[1:]), value)
-
-    def __set_value(self, key, value):
-        self.__assert_valid_key(key)
-        if key not in self.__config_desc:
-            raise JCfgKeyNotFoundError(
-                'Config key: {} is not found'.format(key))
-        else:
-            _value = self.__config_desc[key]
-            if isinstance(_value, JsonCfg):
-                raise JCfgInvalidSetValueError(
-                    'Cannot set value to an exist subconfig.')
-            else:
-                assert isinstance(_value, JsonCfgValue), _value.type
-                return _value.set(value)
+        jcfg_value = self.__get_by_keys(key_list)
+        if not isinstance(jcfg_value, JsonCfgValue):
+                raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format('.'.join(key_list)))
+        jcfg_value.set(value)
+        if jcfg_value.validate() is False:
+            raise JCfgValidateFailError()
 
     def keys(self):
         for key in sorted(self.__config_desc.keys()):
@@ -179,7 +160,9 @@ class JsonCfg(object):
 
         all_keys = list(self.public_keys())
         for key in all_keys:
-            self.__get_value_by_key_list(key.split('.')).add_to_argument(parser, key)
+            jcfg_value = self.__get_by_keys(key.split('.'))
+            assert isinstance(jcfg_value, JsonCfgValue)
+            jcfg_value.add_to_argument(parser, key)
         
         args = parser.parse_args()
         args = vars(args)
@@ -196,11 +179,10 @@ class JsonCfg(object):
                 raise ValueError('Unkown config key encountered: {}'.format(k))
             
             k_list = k.split('.')
-            cfg_value = self.__get_value_by_key_list(k_list)
-            if isinstance(v, list):
-                cfg_value.set(v)
-            else:
-                cfg_value.set(v)
+            cfg_value = self.__get_by_keys(k_list)
+            if not isinstance(cfg_value, JsonCfgValue):
+                raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format(k))
+            cfg_value.set(v)
         
         if cfg_save_path is not None:
             self.save_to_file(cfg_save_path)
@@ -252,6 +234,9 @@ class JsonCfgValue(object):
         self.__value = value
         self.__type = value_type
         self.__default = default
+        self.__validate_func = extra_attr.pop('_validate', None)
+        if self.__validate_func is not None:
+            assert callable(self.__validate_func), 'Validate_func need to be callable!'
         self.__extra = extra_attr
 
     def get(self):
@@ -270,6 +255,12 @@ class JsonCfgValue(object):
             else:
                 raise JCfgValueTypeMismatchError('The type of this config is set to {}, but is assigned a {}'.format(
                     str(self.__type), str(type(value))))
+    
+    def validate(self):
+        if self.__validate_func is None:
+            return True
+        else:
+            return self.__validate_func(self.get())
     
     def get_meta(self, key):
         if key in self.__extra:
@@ -298,16 +289,24 @@ class JsonCfgValue(object):
         if isinstance(value, dict) and _DEFAULT_KEY in value:
             return cls.__create_from_dict_value(value)
         elif isinstance(value, tuple):
-            # support 2-size tuple config value,
-            if len(value) != 2:
-                raise ValueError('Currently only tuple data with size 2 supported: {}'.format(value))
-            else:
+            if len(value) == 2:
                 assert isinstance(value[1], str), 'The second element in the tuple should be of type str, for config description.'
                 dict_value={
                     '_default': value[0],
                     '_desc': value[1]
                 }
                 return cls.create_from_value(dict_value)
+            elif len(value) == 3:
+                assert isinstance(value[1], str), 'The 2nd element in the tuple should be of type str, for config description.'
+                assert callable(value[2]), 'The 3rd element in the tuple should be callable, for validating values.'
+                dict_value = {
+                    '_default': value[0],
+                    '_desc': value[1],
+                    '_validate': value[2],
+                }
+                return cls.create_from_value(dict_value)
+            else:
+                raise ValueError('Currently only 2 or 3 -element tuple is supported for init configs.')
         else:
             return cls.__create_from_pure_value(value)
 

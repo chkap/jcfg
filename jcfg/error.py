@@ -22,3 +22,6 @@ class JCfgInvalidSetValueError(JCfgError):
 
 class JCfgEmptyConfigError(JCfgError):
     pass
+
+class JCfgValidateFailError(JCfgError):
+    pass
