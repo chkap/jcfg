@@ -5,7 +5,7 @@ sys.path.insert(0, '..')
 import subprocess
 
 from jcfg import JsonCfg
-from jcfg import JCfgKeyNotFoundError, JCfgInvalidKeyError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError
+from jcfg import JCfgKeyNotFoundError, JCfgInvalidKeyError, JCfgValueTypeMismatchError, JCfgInvalidSetValueError, JCfgValidateFailError
 
 test_config = {
     'a': 1,
@@ -237,6 +237,32 @@ class Test2SizeTuple(unittest.TestCase):
             'a': (1, 'this is a option defined by 2-size tuple')
         })
         cfg.print_config()
+
+
+class TestValidate(unittest.TestCase):
+
+    def test_validate(self):
+        cfg = JsonCfg({
+            'a': {
+                '_default': 0,
+                '_validate': lambda x: x>=0 and x<10}
+        })
+
+        try:
+            cfg.a = 11
+            self.assertTrue(False)
+        except JCfgValidateFailError:
+            pass
+    
+    def test_validate_tuple(self):
+        cfg = JsonCfg({
+            'a': (0, 'this is desc,', lambda x: x<10 and x>=0)})
+
+        try:
+            cfg.a = 11
+            self.assertTrue(False)
+        except JCfgValidateFailError:
+            pass
 
 if __name__ == '__main__':
     # test_argparser()
