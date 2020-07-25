@@ -76,6 +76,7 @@ cfg = jcfg.JsonCfg({
         '_desc': 'this_si_description',  # this will provide detailed description for this config when typing --help
     },
     'option_by_tuple': (2, 'this is a description'),  # this option is defined with a 2-size tuple, the 1st is default value, 2rd is description
+    'option_by_tuple_3': (0.0, 'this is a description', lambda x: x>=0.0),  # this option is defined with a 3-size tuple, the 3rd is to validate the value.
 })
 ```
 
