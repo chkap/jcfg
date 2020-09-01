@@ -6,7 +6,7 @@ with open('./README.md') as rfile:
 
 setuptools.setup(
     name='jcfg',
-    version='0.10.1',
+    version='0.10.2',
     description='A json-based configuration helper lib for python',
     long_description=long_desc,
     long_description_content_type='text/markdown',

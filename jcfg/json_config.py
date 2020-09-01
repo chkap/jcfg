@@ -182,7 +182,7 @@ class JsonCfg(object):
             if not isinstance(cfg_value, JsonCfgValue):
                 raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format(k))
             cfg_value.set(v)
-            if jcfg_value.validate() is False:
+            if cfg_value.validate() is False:
                 raise JCfgValidateFailError('Validate failure of key: {}={}'.format(k, v))
         
         if cfg_save_path is not None:
