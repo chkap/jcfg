@@ -47,30 +47,27 @@ class JsonCfg(object):
             return
 
     def __getitem__(self, key):
-        key_list = key.split('.')
-        cfg_value = self.__get_by_keys(key_list)
-        if isinstance(cfg_value, JsonCfg):
-            return cfg_value
-        elif isinstance(cfg_value, JsonCfgValue):
-            return cfg_value.get()
+        assert isinstance(key, str)
+        if key == '':
+            raise JCfgInvalidKeyError(f'Empty config key')
+        key_list = key.split('.', maxsplit=1)
+        if len(key_list) == 1:
+            _key = key_list[0]
+            self.__assert_valid_key(_key)
+            if _key not in self.__config_desc:
+                raise JCfgKeyNotFoundError(f'Config key: {key} not defined!')
+            else:
+                _value = self.__config_desc[_key]
+                if isinstance(_value, JsonCfgValue):
+                    return _value.get()
+                else:
+                    assert isinstance(_value, JsonCfg), type(_value)
+                    return _value
         else:
-            assert False, 'This should never happen!'
+            return self.__getitem__(key_list[0]).__getitem__(key_list[1])
 
     def __getattr__(self, name):
-        # if name == '_JsonCfg__config_desc':
-        #     return object.__getattr__(self, name)
-
-        self.__assert_valid_key(name)
-        if name not in self.__config_desc:
-            raise AttributeError('Config key {} not found'.format(name))
-        else:
-            _value = self.__config_desc[name]
-            # print('{} -> {}'.format(name, _value))
-            if isinstance(_value, JsonCfg):
-                return _value
-            else:
-                assert isinstance(_value, JsonCfgValue), type(_value)
-                return _value.get()
+        return self.__getitem__(name)
 
     def _get_value_obj(self, key):
         self.__assert_valid_key(key)
