@@ -15,7 +15,6 @@ class JsonCfg(object):
     __valid_key_pattern = r'[A-Za-z_][A-Za-z0-9_]*'
     __reo = re.compile(__valid_key_pattern)
 
-
     def __init__(self, config_meta):
         if not isinstance(config_meta, dict):
             raise ValueError(
@@ -30,7 +29,7 @@ class JsonCfg(object):
         for key in config_meta:
             cls.__assert_valid_key(key)
             if key in dir(cls):
-                raise JCfgInvalidKeyError(f'{key} is reserved, should not be used as config key.')
+                raise JCfgInvalidKeyError('{} is reserved, should not be used as config key.'.format(key))
             value = config_meta[key]
             if isinstance(value, dict) and _DEFAULT_KEY not in value:
                 config_desc[key] = JsonCfg(config_meta[key])
@@ -45,76 +44,59 @@ class JsonCfg(object):
                 'Invalid config key: {}, only [A-Za-z0-9_] is allowed.'.format(key))
         else:
             return
-
-    def __getitem__(self, key):
+    
+    def __get_sub_config_or_value(self, key):
         assert isinstance(key, str)
         if key == '':
-            raise JCfgInvalidKeyError(f'Empty config key')
+            raise JCfgInvalidKeyError('Empty config key')
         key_list = key.split('.', maxsplit=1)
         if len(key_list) == 1:
             _key = key_list[0]
             self.__assert_valid_key(_key)
             if _key not in self.__config_desc:
-                raise JCfgKeyNotFoundError(f'Config key: {key} not defined!')
+                raise JCfgKeyNotFoundError('Config key: {} not defined!'.format(key))
             else:
                 _value = self.__config_desc[_key]
-                if isinstance(_value, JsonCfgValue):
-                    return _value.get()
-                else:
-                    assert isinstance(_value, JsonCfg), type(_value)
-                    return _value
+                return _value
         else:
-            return self.__getitem__(key_list[0]).__getitem__(key_list[1])
+            sub_config = self.__get_sub_config_or_value(key_list[0])
+            if isinstance(sub_config, JsonCfgValue):
+                raise JCfgInvalidKeyError('Cannot get sub key of JsonCfgValue: {}'.format(key))
+            assert isinstance(sub_config, JsonCfg)
+            return sub_config.__get_sub_config_or_value(key_list[1])
+
+    def __getitem__(self, key):
+        _value = self.__get_sub_config_or_value(key)
+        if isinstance(_value, JsonCfgValue):
+            return _value.get()
+        else:
+            assert isinstance(_value, JsonCfg), type(_value)
+            return _value
 
     def __getattr__(self, name):
         return self.__getitem__(name)
-
-    def _get_value_obj(self, key):
-        self.__assert_valid_key(key)
-        if key not in self.__config_desc:
-            raise JCfgKeyNotFoundError(
-                'Config key: {} is not found'.format(key))
-        else:
-            _value = self.__config_desc[key]
-            assert isinstance(_value, (JsonCfg, JsonCfgValue))
-            return _value
     
-    def __get_by_keys(self, keys):
-        assert isinstance(keys, list) and len(keys) > 0
-        iter_value = self
-        for key in keys:
-            iter_value = iter_value._get_value_obj(key)
-        return iter_value
-
     def __setitem__(self, key, value):
-        key_list = key.split('.')
-        self.__set_value_by_key_list(key_list, value)
+        jcfg_value = self.__get_sub_config_or_value(key)
+        if not isinstance(jcfg_value, JsonCfgValue):
+            raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format(key))
+        jcfg_value.set(value)
+        if jcfg_value.validate() is False:
+            raise JCfgValidateFailError('Validate failure of key: {}={}'.format(key, value))
 
     def __setattr__(self, key, value):
         if key == '_JsonCfg__config_desc':
             if key not in self.__dict__:
                 return object.__setattr__(self, key, value)
-            else:
-                raise JCfgInvalidSetValueError('_JsonCfg__config_desc is a reserved key!')
 
-        if key not in self.__config_desc:
-            return object.__setattr__(self, key, value)
-        else:
-            return self.__setitem__(key, value)
-
-    def __set_value_by_key_list(self, key_list, value):
-        jcfg_value = self.__get_by_keys(key_list)
-        if not isinstance(jcfg_value, JsonCfgValue):
-                raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format('.'.join(key_list)))
-        jcfg_value.set(value)
-        if jcfg_value.validate() is False:
-            raise JCfgValidateFailError('Validate failure of key: {}={}'.format('.'.join(key_list), value))
+        return self.__setitem__(key, value)
 
     def keys(self):
         for key in sorted(self.__config_desc.keys()):
             if isinstance(self.__config_desc[key], JsonCfgValue):
                 yield key
-            elif isinstance(self.__config_desc[key], JsonCfg):
+            else:
+                assert isinstance(self.__config_desc[key], JsonCfg):
                 for _k in self.__config_desc[key].keys():
                     yield '{}.{}'.format(key, _k)
     
@@ -158,8 +140,8 @@ class JsonCfg(object):
 
         all_keys = list(self.public_keys())
         for key in all_keys:
-            jcfg_value = self.__get_by_keys(key.split('.'))
-            assert isinstance(jcfg_value, JsonCfgValue)
+            jcfg_value = self.__get_sub_config_or_value(key)
+            assert isinstance(jcfg_value, JsonCfgValue), key
             jcfg_value.add_to_argument(parser, key)
         
         args = parser.parse_args()
@@ -174,10 +156,9 @@ class JsonCfg(object):
             if v is None:
                 continue
             if k not in all_keys:
-                raise ValueError('Unkown config key encountered: {}'.format(k))
+                raise ValueError('Unkown config key: {}'.format(k))
             
-            k_list = k.split('.')
-            cfg_value = self.__get_by_keys(k_list)
+            cfg_value = self.__get_sub_config_or_value(k)
             if not isinstance(cfg_value, JsonCfgValue):
                 raise JCfgInvalidSetValueError('Cannot set value to a sub config: {}'.format(k))
             cfg_value.set(v)
