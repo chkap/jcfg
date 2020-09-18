@@ -7,7 +7,7 @@ def main():
         'input_int': 0,
         'input_float': 0.0,
         'test_default': {
-            'default': 3,
+            '_default': 3,
             '_desc': 'description'
         }
     })

@@ -96,7 +96,7 @@ class JsonCfg(object):
             if isinstance(self.__config_desc[key], JsonCfgValue):
                 yield key
             else:
-                assert isinstance(self.__config_desc[key], JsonCfg):
+                assert isinstance(self.__config_desc[key], JsonCfg)
                 for _k in self.__config_desc[key].keys():
                     yield '{}.{}'.format(key, _k)
     
@@ -132,10 +132,10 @@ class JsonCfg(object):
     def parse_args(self, description=None):
         parser = argparse.ArgumentParser(description=description)
         
-        cfg_file_dest = '___jcfg_load_path'
+        cfg_file_dest = '@load_path'
         parser.add_argument('-c', help='file path to update config', type=str, metavar='CONFIG_PATH', dest=cfg_file_dest)
 
-        cfg_save_dest = '___jcfg_save_path'
+        cfg_save_dest = '@save_path'
         parser.add_argument('-s', help='file path to dump final config', type=str, metavar='SAVE_PATH', dest=cfg_save_dest)
 
         all_keys = list(self.public_keys())
