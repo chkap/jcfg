@@ -29,6 +29,8 @@ class JsonCfg(object):
             raise JCfgEmptyConfigError()
         for key in config_meta:
             cls.__assert_valid_key(key)
+            if key in dir(cls):
+                raise JCfgInvalidKeyError(f'{key} is reserved, should not be used as config key.')
             value = config_meta[key]
             if isinstance(value, dict) and _DEFAULT_KEY not in value:
                 config_desc[key] = JsonCfg(config_meta[key])
